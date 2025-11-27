@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>📥 Reports</h2>
+<a class="btn" href="/logout">🚪 Logout</a>
+
+{% for r in data %}
+<div class="card">
+    <b>📌 ID: {{r['id']}} | {{r['category']}}</b>
+    <p>{{r['description']}}</p>
+    <p>📅 {{r['created']}}</p>
+    <p>🔖 Status: <b>{{r['status']}}</b></p>
+
+    <a href="/update/{{r['id']}}/பெறப்பட்டது">பெறப்பட்டது</a> |
+    <a href="/update/{{r['id']}}/செயலில்">செயலில்</a> |
+    <a href="/update/{{r['id']}}/தீர்வு">தீர்வு</a>
+</div>
+{% endfor %}
+{% endblock %}

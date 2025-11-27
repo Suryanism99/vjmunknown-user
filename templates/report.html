@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>📢 பிரச்சினை பதிவு</h2>
+
+<form method="POST">
+<select name="category">
+    <option>💧 தண்ணீர்</option>
+    <option>🚮 குப்பை</option>
+    <option>⚡ மின்சாரம்</option>
+    <option>🛣 சாலை</option>
+    <option>🏥 சுகாதாரம்</option>
+    <option>📚 கல்வி</option>
+    <option>🔔 மற்றவை</option>
+</select><br>
+
+<textarea name="description" placeholder="பிரச்சினை விவரம்..." rows="6"></textarea><br>
+
+<button class="btn" type="submit">📨 அனுப்பு</button>
+</form>
+{% endblock %}
