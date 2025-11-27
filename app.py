@@ -4,14 +4,17 @@ import sqlite3
 import os
 
 app = Flask(__name__)
-app.secret_key = "voice_of_vjm_secret"
+app.secret_key = "voice_of_vjm_secret"   # Change to environment variable in future
 
+# Admin password hash
 ADMIN_PASS_HASH = generate_password_hash("prakash123@")
 
-# 🔥 ALWAYS CREATE DATA FOLDER (Render needs this)
+
+# ========= DATABASE SETUP ========= #
+
+# Always create folder (Render containers are empty)
 os.makedirs("data", exist_ok=True)
 
-# 🔥 CORRECT DB PATH
 DB_PATH = os.path.join(os.getcwd(), "data", "reports.db")
 
 
@@ -36,24 +39,30 @@ def init():
     conn.close()
 
 
+# 🔥 CREATE DB ON SERVER START (IMPORTANT FOR RENDER)
+init()
+
+
+# ========= ROUTES ========= #
+
+
 @app.route("/")
 def home():
     return render_template("home.html")
 
 
-@app.route("/report", methods=["GET","POST"])
+@app.route("/report", methods=["GET", "POST"])
 def report():
     if request.method == "POST":
-        category = request.form["category"]
-        description = request.form["description"]
+        cat = request.form["category"]
+        desc = request.form["description"]
 
         conn = db()
-        conn.execute(
-            "INSERT INTO reports(category, description) VALUES (?, ?)",
-            (category, description)
-        )
+        conn.execute("INSERT INTO reports(category, description) VALUES (?,?)",
+                     (cat, desc))
         conn.commit()
         conn.close()
+
         return redirect("/thanks")
 
     return render_template("report.html")
@@ -61,19 +70,20 @@ def report():
 
 @app.route("/thanks")
 def thanks():
-    return "🙏 நன்றி! உங்கள் பிரச்சினை பதிவாகிவிட்டது."
+    return "<h2>🙏 நன்றி! உங்கள் தகவல் பதிவாகிவிட்டது.</h2>"
 
 
-# ---------------- ADMIN ---------------- #
+# ========= ADMIN ========= #
 
-@app.route("/admin", methods=["GET","POST"])
+
+@app.route("/admin", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
         pwd = request.form["password"]
         if check_password_hash(ADMIN_PASS_HASH, pwd):
             session["admin"] = True
             return redirect("/admin_panel")
-        return "❌ Wrong password."
+        return "❌ தவறான கடவுச்சொல்!"
     return render_template("admin_login.html")
 
 
@@ -85,21 +95,22 @@ def admin_panel():
     conn = db()
     cur = conn.cursor()
     cur.execute("SELECT * FROM reports ORDER BY id DESC")
-    rows = cur.fetchall()
+    data = cur.fetchall()
     conn.close()
 
-    return render_template("admin_panel.html", data=rows)
+    return render_template("admin_panel.html", data=data)
 
 
-@app.route("/update/<int:id>/<status>")
-def update_status(id, status):
+@app.route("/update/<int:rid>/<status>")
+def update_status(rid, status):
     if not session.get("admin"):
         return redirect("/admin")
 
     conn = db()
-    conn.execute("UPDATE reports SET status=? WHERE id=?", (status, id))
+    conn.execute("UPDATE reports SET status=? WHERE id=?", (status, rid))
     conn.commit()
     conn.close()
+
     return redirect("/admin_panel")
 
 
@@ -109,6 +120,7 @@ def logout():
     return redirect("/admin")
 
 
+# ========= LOCAL DEBUG ========= #
 if __name__ == "__main__":
     init()
-    app.run()
+    app.run(debug=True)
