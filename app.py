@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session
+\from flask import Flask, render_template, request, redirect, session
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 import os
@@ -6,20 +6,24 @@ import os
 app = Flask(__name__)
 app.secret_key = "voice_of_vjm_secret"
 
-# Admin password hash
 ADMIN_PASS_HASH = generate_password_hash("prakash123@")
+
+# 🔥 ALWAYS CREATE DATA FOLDER (Render needs this)
+os.makedirs("data", exist_ok=True)
+
+# 🔥 CORRECT DB PATH
+DB_PATH = os.path.join(os.getcwd(), "data", "reports.db")
 
 
 def db():
-    conn = sqlite3.connect("data/reports.db")
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
 
 def init():
     conn = db()
-    c = conn.cursor()
-    c.execute("""
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS reports(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             category TEXT,
@@ -40,24 +44,27 @@ def home():
 @app.route("/report", methods=["GET","POST"])
 def report():
     if request.method == "POST":
-        cat = request.form["category"]
-        desc = request.form["description"]
+        category = request.form["category"]
+        description = request.form["description"]
 
         conn = db()
-        conn.execute("INSERT INTO reports(category, description) VALUES(?,?)",
-                     (cat, desc))
+        conn.execute(
+            "INSERT INTO reports(category, description) VALUES (?, ?)",
+            (category, description)
+        )
         conn.commit()
         conn.close()
         return redirect("/thanks")
+
     return render_template("report.html")
 
 
 @app.route("/thanks")
 def thanks():
-    return "<h2>🙏 நன்றி! உங்கள் தகவல் பதிவானது.</h2>"
+    return "🙏 நன்றி! உங்கள் பிரச்சினை பதிவாகிவிட்டது."
 
 
-## ADMIN ###########################
+# ---------------- ADMIN ---------------- #
 
 @app.route("/admin", methods=["GET","POST"])
 def admin_login():
@@ -66,7 +73,7 @@ def admin_login():
         if check_password_hash(ADMIN_PASS_HASH, pwd):
             session["admin"] = True
             return redirect("/admin_panel")
-        return "🔐 Wrong password"
+        return "❌ Wrong password."
     return render_template("admin_login.html")
 
 
@@ -78,13 +85,14 @@ def admin_panel():
     conn = db()
     cur = conn.cursor()
     cur.execute("SELECT * FROM reports ORDER BY id DESC")
-    data = cur.fetchall()
+    rows = cur.fetchall()
     conn.close()
-    return render_template("admin_panel.html", data=data)
+
+    return render_template("admin_panel.html", data=rows)
 
 
 @app.route("/update/<int:id>/<status>")
-def update(id, status):
+def update_status(id, status):
     if not session.get("admin"):
         return redirect("/admin")
 
@@ -103,4 +111,4 @@ def logout():
 
 if __name__ == "__main__":
     init()
-    app.run(debug=True)
+    app.run()
